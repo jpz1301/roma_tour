@@ -31,7 +31,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     if ($result) {
         // Actualizar estado del vehículo a "Mantenimiento"
-        pg_query_params($conexion, "UPDATE vehiculos SET estado = 'Mantenimiento' WHERE id_vehiculo = $1", [$vehiculo_id]);
+        $update = pg_query_params($conexion, "UPDATE vehiculos SET estado = 'Mantenimiento' WHERE id_vehiculo = $1", [$vehiculo_id]);
+        
+        // Para depurar (borrar después de probar)
+        if (!$update) {
+            echo "Error al actualizar vehículo: " . pg_last_error($conexion);
+            exit();
+        }
         
         header("Location: listar_mantenimiento.php");
         exit();
