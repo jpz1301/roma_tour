@@ -13,11 +13,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $problema      = $_POST['problema'] ?? '';
     $observaciones = $_POST['observaciones'] ?? '';
 
-    // Convertir costo (vacío = NULL)
     $costo = $_POST['costo'] ?? '';
     $costo = ($costo !== '' && $costo !== null) ? floatval($costo) : null;
 
-    // Validación
     if ($vehiculo_id == "" || $mecanico == "" || $taller == "" || $tipo == "" || $fecha == "" || $responsable == "" || $problema == "") {
         echo "<script>alert('Complete todos los campos obligatorios'); window.history.back();</script>";
         exit();
@@ -32,6 +30,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     ]);
 
     if ($result) {
+        // Actualizar estado del vehículo a "Mantenimiento"
+        pg_query_params($conexion, "UPDATE vehiculos SET estado = 'Mantenimiento' WHERE id_vehiculo = $1", [$vehiculo_id]);
+        
         header("Location: listar_mantenimiento.php");
         exit();
     } else {

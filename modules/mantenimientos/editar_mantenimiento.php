@@ -68,12 +68,12 @@ include("../../includes/navbar.php");
 
     <div class="col-md-4 mb-3">
         <label class="form-label fw-semibold">Mecánico</label>
-        <input type="text" name="mecanico" class="form-control" value="<?= htmlspecialchars($mantenimiento['mecanico'] ?? '') ?>">
+        <input type="text" name="mecanico" class="form-control" value="<?= htmlspecialchars($mantenimiento['mecanico_id'] ?? '') ?>">
     </div>
 
     <div class="col-md-4 mb-3">
         <label class="form-label fw-semibold">Taller</label>
-        <input type="text" name="taller" class="form-control" value="<?= htmlspecialchars($mantenimiento['taller'] ?? '') ?>">
+        <input type="text" name="taller" class="form-control" value="<?= htmlspecialchars($mantenimiento['taller_id'] ?? '') ?>">
     </div>
 
     <div class="col-md-4 mb-3">
@@ -109,4 +109,4 @@ include("../../includes/navbar.php");
 </div></div>
 </div>
 
-<?php include("../../includes/footer.php"); ?> 
+<?php include("../../includes/footer.php"); ?>
