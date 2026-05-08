@@ -26,7 +26,9 @@ while($inc = pg_fetch_assoc($resInc)){
 $stats = pg_fetch_assoc(pg_query($conexion, "SELECT 
     COUNT(*) as total,
     SUM(CASE WHEN estado='Activo' THEN 1 ELSE 0 END) as activos,
-    SUM(CASE WHEN estado='Inactivo' THEN 1 ELSE 0 END) as inactivos
+    SUM(CASE WHEN estado='Inactivo' THEN 1 ELSE 0 END) as inactivos,
+    SUM(CASE WHEN LOWER(tipo_contrato) LIKE '%temporal%' OR LOWER(tipo_contrato) = 'temporal' THEN 1 ELSE 0 END) as temporales,
+    SUM(CASE WHEN LOWER(tipo_contrato) LIKE '%permanente%' OR LOWER(tipo_contrato) LIKE '%indefinido%' OR LOWER(tipo_contrato) LIKE '%plazo fijo%' OR tipo_contrato IS NULL OR tipo_contrato = '' THEN 1 ELSE 0 END) as permanentes
     FROM conductores"));
 
 // Configurar includes
@@ -72,6 +74,16 @@ include("../../includes/navbar.php");
         <div class="stat-number"><?= $stats['inactivos'] ?></div>
         <div class="stat-label">Inactivos</div>
     </div>
+    <div class="stat-card temporales" style="border-bottom: 3px solid #ffc107;">
+        <div class="stat-icon">🕐</div>
+        <div class="stat-number" style="color:#b8860b;"><?= $stats['temporales'] ?></div>
+        <div class="stat-label">Temporales</div>
+    </div>
+    <div class="stat-card permanentes" style="border-bottom: 3px solid #0d6efd;">
+        <div class="stat-icon">🔒</div>
+        <div class="stat-number" style="color:#0d6efd;"><?= $stats['permanentes'] ?></div>
+        <div class="stat-label">Permanentes</div>
+    </div>
 </div>
 
 <!-- Tabla -->
@@ -108,6 +120,19 @@ include("../../includes/navbar.php");
 <?php while($row = pg_fetch_assoc($result)): 
     $nombre_cond = strtolower(trim($row['nombre']));
     $total_inc = $incidencias[$nombre_cond] ?? 0;
+    $contrato = strtolower(trim($row['tipo_contrato'] ?? ''));
+    
+    // Determinar tipo de contrato
+    if (strpos($contrato, 'temporal') !== false) {
+        $badge_contrato = 'badge bg-warning text-dark';
+    } elseif (strpos($contrato, 'permanente') !== false || strpos($contrato, 'indefinido') !== false || strpos($contrato, 'plazo fijo') !== false) {
+        $badge_contrato = 'badge bg-primary';
+    } elseif (empty($contrato)) {
+        $badge_contrato = 'badge bg-secondary';
+        $row['tipo_contrato'] = 'No definido';
+    } else {
+        $badge_contrato = 'badge bg-info';
+    }
 ?>
 <tr>
     <td><span class="badge bg-dark">#<?= $row['id_conductor'] ?></span></td>
@@ -129,7 +154,7 @@ include("../../includes/navbar.php");
     <td><span class="badge bg-primary"><?= $row['dias_salidas'] ?? 0 ?> días</span></td>
     <td><?= htmlspecialchars($row['direccion'] ?? '—') ?></td>
     <td><?= htmlspecialchars($row['telefono_emergencia'] ?? '—') ?></td>
-    <td><?= htmlspecialchars($row['tipo_contrato'] ?? '—') ?></td>
+    <td><span class="<?= $badge_contrato ?>"><?= htmlspecialchars($row['tipo_contrato'] ?? 'No definido') ?></span></td>
     <td><span class="badge bg-secondary"><?= $row['vacaciones'] ?? 0 ?> días</span></td>
 
     <td>
