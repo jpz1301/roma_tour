@@ -1,4 +1,4 @@
-FROM dunglas/frankenphp:latest-php8.4
+FROM shinsenter/frankenphp:latest
 
 # Instalar extensión pgsql y otras dependencias comunes
 RUN apt-get update && apt-get install -y libpq-dev \
