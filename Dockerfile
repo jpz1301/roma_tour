@@ -8,4 +8,3 @@ RUN chown -R www-data:www-data /var/www/html/
 
 WORKDIR /var/www/html
 
-CMD ["frankenphp", "run", "--addr", "0.0.0.0:8080"]
