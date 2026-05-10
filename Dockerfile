@@ -7,5 +7,3 @@ COPY . /var/www/html/
 RUN chown -R www-data:www-data /var/www/html/
 
 WORKDIR /var/www/html
-
-CMD ["frankenphp", "php-server", "--listen", "0.0.0.0:80", "--root", "/var/www/html"]
