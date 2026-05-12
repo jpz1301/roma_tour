@@ -16,6 +16,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $tipo_contrato = $_POST['tipo_contrato'];
     $vacaciones = $_POST['vacaciones'];
 
+    // CORRECCIÓN: Convertir vacíos a NULL para campos numéricos y fecha
+    $dias_libres = ($dias_libres !== '' && $dias_libres !== null) ? intval($dias_libres) : null;
+    $dias_salidas = ($dias_salidas !== '' && $dias_salidas !== null) ? intval($dias_salidas) : null;
+    $vacaciones = ($vacaciones !== '' && $vacaciones !== null) ? intval($vacaciones) : null;
+    $fecha_ingreso = ($fecha_ingreso !== '' && $fecha_ingreso !== null) ? $fecha_ingreso : null;
+
     $sql = "INSERT INTO conductores 
             (nombre, dni, telefono, licencia, estado,
              fecha_ingreso, dias_libres, dias_salidas, direccion, telefono_emergencia, tipo_contrato, vacaciones) 
