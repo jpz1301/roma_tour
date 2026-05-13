@@ -4,18 +4,30 @@ include("../../config/conexion.php");
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
-    $vehiculo_id   = $_POST['vehiculo_id'] ?? '';
-    $mecanico      = $_POST['mecanico'] ?? '';
-    $taller        = $_POST['taller'] ?? '';
-    $tipo          = $_POST['tipo'] ?? '';
-    $fecha         = $_POST['fecha'] ?? '';
-    $responsable   = $_POST['responsable'] ?? '';
-    $problema      = $_POST['problema'] ?? '';
-    $observaciones = $_POST['observaciones'] ?? '';
-
-    $costo = $_POST['costo'] ?? '';
+    $vehiculo_id    = $_POST['vehiculo_id'] ?? '';
+    $mecanico       = $_POST['mecanico'] ?? '';
+    $taller         = $_POST['taller'] ?? '';
+    $tipo           = $_POST['tipo'] ?? '';
+    $fecha          = $_POST['fecha'] ?? '';
+    $responsable_id = $_POST['responsable_id'] ?? ''; // ✅ ahora es ID del conductor
+    $problema       = $_POST['problema'] ?? '';
+    $observaciones  = $_POST['observaciones'] ?? '';
+    $costo          = $_POST['costo'] ?? '';
     $costo = ($costo !== '' && $costo !== null) ? floatval($costo) : null;
 
+    // 🔍 Obtener el nombre del conductor a partir del ID
+    $responsable = '';
+    if ($responsable_id != '') {
+        $query_nombre = pg_query_params($conexion, "SELECT nombre FROM conductores WHERE id_conductor = $1", [$responsable_id]);
+        if ($row = pg_fetch_assoc($query_nombre)) {
+            $responsable = $row['nombre'];
+        } else {
+            echo "<script>alert('Conductor no válido'); window.history.back();</script>";
+            exit();
+        }
+    }
+
+    // Validar campos obligatorios (ahora $responsable se llena automáticamente)
     if ($vehiculo_id == "" || $mecanico == "" || $taller == "" || $tipo == "" || $fecha == "" || $responsable == "" || $problema == "") {
         echo "<script>alert('Complete todos los campos obligatorios'); window.history.back();</script>";
         exit();
@@ -33,7 +45,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         // Actualizar estado del vehículo a "Mantenimiento"
         $update = pg_query_params($conexion, "UPDATE vehiculos SET estado = 'Mantenimiento' WHERE id_vehiculo = $1", [$vehiculo_id]);
         
-        // Para depurar (borrar después de probar)
         if (!$update) {
             echo "Error al actualizar vehículo: " . pg_last_error($conexion);
             exit();

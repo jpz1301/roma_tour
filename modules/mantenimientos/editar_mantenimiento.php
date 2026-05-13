@@ -15,6 +15,9 @@ if (!$mantenimiento) {
 
 $vehiculos = pg_query($conexion, "SELECT id_vehiculo, placa FROM vehiculos ORDER BY placa");
 
+// Obtener conductores para el select
+$conductores = pg_query($conexion, "SELECT id_conductor, nombre FROM conductores ORDER BY nombre");
+
 // Configurar includes
 $titulo = 'Editar Mantenimiento | Pequeña Roma Tours';
 $ruta_css = '../../assets/css/estilos.css';
@@ -61,9 +64,23 @@ include("../../includes/navbar.php");
         </select>
     </div>
 
+    <!-- RESPONSABLE CON SELECT DE CONDUCTORES -->
     <div class="col-md-4 mb-3">
-        <label class="form-label fw-semibold">Responsable</label>
-        <input type="text" name="responsable" value="<?= htmlspecialchars($mantenimiento['responsable']) ?>" class="form-control" required>
+        <label class="form-label fw-semibold">Responsable (Conductor)</label>
+        <select name="responsable_id" class="form-select" required>
+            <option value="">-- Seleccionar conductor --</option>
+            <?php 
+            // Obtener el nombre del responsable actual (texto)
+            $nombre_actual = $mantenimiento['responsable'];
+            // Recorrer conductores y preseleccionar si el nombre coincide
+            while($conductor = pg_fetch_assoc($conductores)):
+                $selected = ($conductor['nombre'] == $nombre_actual) ? 'selected' : '';
+            ?>
+                <option value="<?= $conductor['id_conductor'] ?>" <?= $selected ?>>
+                    <?= htmlspecialchars($conductor['nombre']) ?>
+                </option>
+            <?php endwhile; ?>
+        </select>
     </div>
 
     <div class="col-md-4 mb-3">

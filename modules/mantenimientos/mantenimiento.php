@@ -2,7 +2,11 @@
 include("../../includes/seguridad.php");
 include("../../config/conexion.php");
 
+// Obtener vehículos
 $vehiculos = pg_query($conexion, "SELECT id_vehiculo, placa FROM vehiculos ORDER BY placa");
+
+// Obtener conductores (para el select de responsable)
+$conductores = pg_query($conexion, "SELECT id_conductor, nombre FROM conductores ORDER BY nombre");
 
 // Configurar includes
 $titulo = 'Registrar Mantenimiento | Pequeña Roma Tours';
@@ -27,81 +31,94 @@ include("../../includes/navbar.php");
 </div>
 
 <div class="container mb-5">
+    <div class="main-card">
+        <div class="card-header" style="background: linear-gradient(135deg, #fd7e14, #e06d0a);">
+            <h4><i class="bi bi-tools"></i> Registro de Mantenimiento</h4>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="guardar_mantenimiento.php">
+                <div class="row">
+                    <!-- Fecha -->
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-semibold">Fecha</label>
+                        <input type="date" name="fecha" class="form-control" value="<?= date('Y-m-d') ?>" required>
+                    </div>
 
-<div class="main-card">
-<div class="card-header" style="background: linear-gradient(135deg, #fd7e14, #e06d0a);">
-    <h4><i class="bi bi-tools"></i> Registro de Mantenimiento</h4>
-</div>
-<div class="card-body">
+                    <!-- Vehículo -->
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-semibold">Vehículo</label>
+                        <select name="vehiculo_id" class="form-select select2" required>
+                            <option value="">Buscar vehículo...</option>
+                            <?php while($v = pg_fetch_assoc($vehiculos)): ?>
+                                <option value="<?= $v['id_vehiculo'] ?>"><?= htmlspecialchars($v['placa']) ?></option>
+                            <?php endwhile; ?>
+                        </select>
+                    </div>
 
-<form method="POST" action="guardar_mantenimiento.php">
+                    <!-- RESPONSABLE (CONDUCTOR) - MODIFICADO A SELECT -->
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-semibold">Responsable (Conductor)</label>
+                        <select name="responsable_id" class="form-select" required>
+                            <option value="">-- Seleccionar conductor --</option>
+                            <?php while($conductor = pg_fetch_assoc($conductores)): ?>
+                                <option value="<?= $conductor['id_conductor'] ?>">
+                                    <?= htmlspecialchars($conductor['nombre']) ?>
+                                </option>
+                            <?php endwhile; ?>
+                        </select>
+                    </div>
 
-<div class="row">
-    <div class="col-md-4 mb-3">
-        <label class="form-label fw-semibold">Fecha</label>
-        <input type="date" name="fecha" class="form-control" value="<?= date('Y-m-d') ?>" required>
-    </div>
+                    <!-- Mecánico -->
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-semibold">Mecánico</label>
+                        <input type="text" name="mecanico" class="form-control" placeholder="Nombre del mecánico" required>
+                    </div>
 
-    <div class="col-md-4 mb-3">
-        <label class="form-label fw-semibold">Vehículo</label>
-        <select name="vehiculo_id" class="form-select select2" required>
-            <option value="">Buscar vehículo...</option>
-            <?php while($v = pg_fetch_assoc($vehiculos)): ?>
-                <option value="<?= $v['id_vehiculo'] ?>"><?= htmlspecialchars($v['placa']) ?></option>
-            <?php endwhile; ?>
-        </select>
-    </div>
+                    <!-- Taller -->
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-semibold">Taller</label>
+                        <input type="text" name="taller" class="form-control" placeholder="Nombre del taller" required>
+                    </div>
 
-    <div class="col-md-4 mb-3">
-        <label class="form-label fw-semibold">Responsable</label>
-        <input type="text" name="responsable" class="form-control" placeholder="Nombre del responsable" required>
-    </div>
+                    <!-- Tipo -->
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-semibold">Tipo</label>
+                        <select name="tipo" class="form-select" required>
+                            <option value="">Seleccione</option>
+                            <option value="Preventivo">🛠 Preventivo</option>
+                            <option value="Correctivo">⚠ Correctivo</option>
+                        </select>
+                    </div>
 
-    <div class="col-md-4 mb-3">
-        <label class="form-label fw-semibold">Mecánico</label>
-        <input type="text" name="mecanico" class="form-control" placeholder="Nombre del mecánico" required>
-    </div>
+                    <!-- Problema -->
+                    <div class="col-md-12 mb-3">
+                        <label class="form-label fw-semibold">Problema</label>
+                        <input type="text" name="problema" class="form-control" placeholder="Ej: ruido en frenos, falla en motor..." required>
+                    </div>
 
-    <div class="col-md-4 mb-3">
-        <label class="form-label fw-semibold">Taller</label>
-        <input type="text" name="taller" class="form-control" placeholder="Nombre del taller" required>
-    </div>
+                    <!-- Costo -->
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-semibold">Costo</label>
+                        <div class="input-group">
+                            <span class="input-group-text">S/</span>
+                            <input type="number" step="0.01" name="costo" class="form-control" placeholder="0.00">
+                        </div>
+                    </div>
 
-    <div class="col-md-4 mb-3">
-        <label class="form-label fw-semibold">Tipo</label>
-        <select name="tipo" class="form-select" required>
-            <option value="">Seleccione</option>
-            <option value="Preventivo">🛠 Preventivo</option>
-            <option value="Correctivo">⚠ Correctivo</option>
-        </select>
-    </div>
+                    <!-- Observaciones -->
+                    <div class="col-md-12 mb-3">
+                        <label class="form-label fw-semibold">Observaciones</label>
+                        <textarea name="observaciones" class="form-control" rows="3" placeholder="Detalles del mantenimiento..."></textarea>
+                    </div>
+                </div>
 
-    <div class="col-md-12 mb-3">
-        <label class="form-label fw-semibold">Problema</label>
-        <input type="text" name="problema" class="form-control" placeholder="Ej: ruido en frenos, falla en motor..." required>
-    </div>
-
-    <div class="col-md-4 mb-3">
-        <label class="form-label fw-semibold">Costo</label>
-        <div class="input-group">
-            <span class="input-group-text">S/</span>
-            <input type="number" step="0.01" name="costo" class="form-control" placeholder="0.00">
+                <div class="d-flex gap-2 mt-3">
+                    <button type="submit" class="btn btn-success"><i class="bi bi-save"></i> Guardar</button>
+                    <a href="listar_mantenimiento.php" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Cancelar</a>
+                </div>
+            </form>
         </div>
     </div>
-
-    <div class="col-md-12 mb-3">
-        <label class="form-label fw-semibold">Observaciones</label>
-        <textarea name="observaciones" class="form-control" rows="3" placeholder="Detalles del mantenimiento..."></textarea>
-    </div>
-</div>
-
-<div class="d-flex gap-2 mt-3">
-    <button type="submit" class="btn btn-success"><i class="bi bi-save"></i> Guardar</button>
-    <a href="listar_mantenimiento.php" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Cancelar</a>
-</div>
-
-</form>
-</div></div>
 </div>
 
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0/dist/css/select2.min.css" rel="stylesheet">
