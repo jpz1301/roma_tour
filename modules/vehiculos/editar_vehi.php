@@ -57,25 +57,27 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         $sql = "UPDATE vehiculos SET 
                 code = $1, placa = $2, marca = $3, modelo = $4, edicion = $5, asientos = $6, estado = $7,
-                espejo_derecho = $8, espejo_izquierdo = $9, claxon = $10, antena = $11,
-                parabrisas_frontal = $12, parabrisas_posterior = $13,
-                tapa_combustible = $14, tapa_aceite_motor = $15, tapa_radiator = $16,
-                luces_altas = $17, luces_bajas = $18, luces_traseras = $19, luces_freno = $20, luces_intermitentes = $21,
-                cinturon = $22, radio = $23, extintor = $24, llanta_repuesto = $25,
-                llave_rueda = $26, linterna = $27, gato = $28, aire_forzado = $29,
-                aceite_motor = $30, refrigerante = $31, aceite_direccion = $32,
-                alarma = $33, cone_seguridad = $34, suspension = $35, emblemas = $36,
-                observaciones = $37,
-                marca_llanta_del_izq = $39, presion_llanta_del_izq = $40,
-                marca_llanta_del_der = $41, presion_llanta_del_der = $42,
-                marca_llanta_post_izq_int = $43, presion_llanta_post_izq_int = $44,
-                marca_llanta_post_izq_ext = $45, presion_llanta_post_izq_ext = $46,
-                marca_llanta_post_der_int = $47, presion_llanta_post_der_int = $48,
-                marca_llanta_post_der_ext = $49, presion_llanta_post_der_ext = $50
-                WHERE id_vehiculo = $38";
+                soat = $8,
+                espejo_derecho = $9, espejo_izquierdo = $10, claxon = $11, antena = $12,
+                parabrisas_frontal = $13, parabrisas_posterior = $14,
+                tapa_combustible = $15, tapa_aceite_motor = $16, tapa_radiator = $17,
+                luces_altas = $18, luces_bajas = $19, luces_traseras = $20, luces_freno = $21, luces_intermitentes = $22,
+                cinturon = $23, radio = $24, extintor = $25, llanta_repuesto = $26,
+                llave_rueda = $27, linterna = $28, gato = $29, aire_forzado = $30,
+                aceite_motor = $31, refrigerante = $32, aceite_direccion = $33,
+                alarma = $34, cone_seguridad = $35, suspension = $36, emblemas = $37,
+                observaciones = $38,
+                marca_llanta_del_izq = $40, presion_llanta_del_izq = $41,
+                marca_llanta_del_der = $42, presion_llanta_del_der = $43,
+                marca_llanta_post_izq_int = $44, presion_llanta_post_izq_int = $45,
+                marca_llanta_post_izq_ext = $46, presion_llanta_post_izq_ext = $47,
+                marca_llanta_post_der_int = $48, presion_llanta_post_der_int = $49,
+                marca_llanta_post_der_ext = $50, presion_llanta_post_der_ext = $51
+                WHERE id_vehiculo = $39";
 
         $params = [
             $code, $placa, $marca, $modelo, $edicion, $asientos, $estado,
+            $_POST['soat'] ?? '',
             v('espejo_derecho'), v('espejo_izquierdo'), v('claxon'), v('antena'),
             v('parabrisas_frontal'), v('parabrisas_posterior'),
             v('tapa_combustible'), v('tapa_aceite_motor'), v('tapa_radiator'),
@@ -170,6 +172,10 @@ include("../../includes/navbar.php");
             <option value="Mantenimiento" <?= $vehiculo['estado']=='Mantenimiento'?'selected':'' ?>>Mantenimiento</option>
             <option value="Inactivo" <?= $vehiculo['estado']=='Inactivo'?'selected':'' ?>>Inactivo</option>
         </select>
+    </div>
+    <div class="col-md-4 mb-3">
+        <label class="form-label fw-semibold">SOAT</label>
+        <input type="text" name="soat" class="form-control" value="<?= htmlspecialchars($vehiculo['soat'] ?? '') ?>">
     </div>
 </div>
 

@@ -37,14 +37,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
              linterna, gato, aire_forzado,
              alarma, cone_seguridad, suspension, emblemas,
              llanta_repuesto, aceite_motor, refrigerante, aceite_direccion, observaciones) 
-            VALUES ($1,$2,$3,$4,$5,$6,$7, NULL,NULL,NULL,
-             $8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,
-             $22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,
-             $33,$34,$35,$36,$37)
+            VALUES ($1,$2,$3,$4,$5,$6,$7, $8,NULL,NULL,
+             $9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,
+             $23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,
+             $34,$35,$36,$37,$38)
             RETURNING id_vehiculo";
 
             $params = array(
                 $code, $placa, $marca, $modelo, $edicion, $asientos, $estado,
+                $_POST['soat'] ?? '',
                 v('espejo_derecho'), v('espejo_izquierdo'), v('claxon'), v('antena'),
                 v('parabrisas_frontal'), v('parabrisas_posterior'),
                 v('tapa_combustible'), v('tapa_aceite_motor'), v('tapa_radiator'),
@@ -134,6 +135,10 @@ include("../../includes/navbar.php");
             <option value="Inactivo">Inactivo</option>
             <option value="Mantenimiento">Mantenimiento</option>
         </select>
+    </div>
+    <div class="col-md-4 mb-3">
+        <label class="form-label fw-semibold">SOAT</label>
+        <input type="text" name="soat" class="form-control" placeholder="Ej: Número de póliza, fecha vencimiento" value="<?= htmlspecialchars($_POST['soat'] ?? '') ?>">
     </div>
 </div>
 

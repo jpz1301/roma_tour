@@ -258,6 +258,20 @@ table {
     text-overflow: ellipsis;
 }
 
+.soat-badge {
+    display: inline-block;
+    background: #fff3cd;
+    padding: 3px 10px;
+    border-radius: 15px;
+    font-size: 11px;
+    color: #856404;
+    border: 1px solid #ffc107;
+    max-width: 140px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 /* ========== BOTONES ACCIÓN ========== */
 .btn {
     border-radius: 6px;
