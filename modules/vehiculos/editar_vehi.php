@@ -9,11 +9,11 @@ function v($campo){
     return $_POST[$campo] ?? 'B';
 }
 
-// Obtener vehículo
+// Obtener vehículo de forma segura
 if (isset($_GET['id'])) {
     $id = intval($_GET['id']);
-    $sql = "SELECT * FROM vehiculos WHERE id_vehiculo = $id";
-    $result = pg_query($conexion, $sql);
+    $sql = "SELECT * FROM vehiculos WHERE id_vehiculo = $1";
+    $result = pg_query_params($conexion, $sql, [$id]);
 
     if ($result && pg_num_rows($result) > 0) {
         $vehiculo = pg_fetch_assoc($result);
@@ -42,8 +42,27 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (pg_num_rows($verificar) > 0) {
         $error = "El código ya existe";
     } else {
+        // Manejo del campo SOAT: convertir vacío a NULL y formatear fecha si es necesario
+        $soat_raw = $_POST['soat'] ?? '';
+        $soat = null;
+        if (!empty($soat_raw)) {
+            // Si viene en formato dd/mm/yyyy
+            if (preg_match('/^\d{2}\/\d{2}\/\d{4}$/', $soat_raw)) {
+                $parts = explode('/', $soat_raw);
+                $soat = "{$parts[2]}-{$parts[1]}-{$parts[0]}";
+            } else {
+                // Asumir YYYY-MM-DD
+                $soat = $soat_raw;
+            }
+            // Validar que sea una fecha real
+            $date = DateTime::createFromFormat('Y-m-d', $soat);
+            if (!$date || $date->format('Y-m-d') !== $soat) {
+                $error = "Formato de fecha SOAT inválido (use AAAA-MM-DD o DD/MM/AAAA)";
+                $soat = null;
+            }
+        }
 
-        // Convertir presiones vacías a NULL para evitar error de integer
+        // Convertir presiones vacías a NULL
         $presiones = [];
         $campos_presion = [
             'presion_llanta_del_izq', 'presion_llanta_del_der',
@@ -55,54 +74,56 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $presiones[$campo] = ($val !== '' && $val !== null) ? intval($val) : null;
         }
 
-        $sql = "UPDATE vehiculos SET 
-                code = $1, placa = $2, marca = $3, modelo = $4, edicion = $5, asientos = $6, estado = $7,
-                soat = $8,
-                espejo_derecho = $9, espejo_izquierdo = $10, claxon = $11, antena = $12,
-                parabrisas_frontal = $13, parabrisas_posterior = $14,
-                tapa_combustible = $15, tapa_aceite_motor = $16, tapa_radiator = $17,
-                luces_altas = $18, luces_bajas = $19, luces_traseras = $20, luces_freno = $21, luces_intermitentes = $22,
-                cinturon = $23, radio = $24, extintor = $25, llanta_repuesto = $26,
-                llave_rueda = $27, linterna = $28, gato = $29, aire_forzado = $30,
-                aceite_motor = $31, refrigerante = $32, aceite_direccion = $33,
-                alarma = $34, cone_seguridad = $35, suspension = $36, emblemas = $37,
-                observaciones = $38,
-                marca_llanta_del_izq = $40, presion_llanta_del_izq = $41,
-                marca_llanta_del_der = $42, presion_llanta_del_der = $43,
-                marca_llanta_post_izq_int = $44, presion_llanta_post_izq_int = $45,
-                marca_llanta_post_izq_ext = $46, presion_llanta_post_izq_ext = $47,
-                marca_llanta_post_der_int = $48, presion_llanta_post_der_int = $49,
-                marca_llanta_post_der_ext = $50, presion_llanta_post_der_ext = $51
-                WHERE id_vehiculo = $39";
+        if (!isset($error)) {
+            $sql = "UPDATE vehiculos SET 
+                    code = $1, placa = $2, marca = $3, modelo = $4, edicion = $5, asientos = $6, estado = $7,
+                    soat = $8,
+                    espejo_derecho = $9, espejo_izquierdo = $10, claxon = $11, antena = $12,
+                    parabrisas_frontal = $13, parabrisas_posterior = $14,
+                    tapa_combustible = $15, tapa_aceite_motor = $16, tapa_radiator = $17,
+                    luces_altas = $18, luces_bajas = $19, luces_traseras = $20, luces_freno = $21, luces_intermitentes = $22,
+                    cinturon = $23, radio = $24, extintor = $25, llanta_repuesto = $26,
+                    llave_rueda = $27, linterna = $28, gato = $29, aire_forzado = $30,
+                    aceite_motor = $31, refrigerante = $32, aceite_direccion = $33,
+                    alarma = $34, cone_seguridad = $35, suspension = $36, emblemas = $37,
+                    observaciones = $38,
+                    marca_llanta_del_izq = $40, presion_llanta_del_izq = $41,
+                    marca_llanta_del_der = $42, presion_llanta_del_der = $43,
+                    marca_llanta_post_izq_int = $44, presion_llanta_post_izq_int = $45,
+                    marca_llanta_post_izq_ext = $46, presion_llanta_post_izq_ext = $47,
+                    marca_llanta_post_der_int = $48, presion_llanta_post_der_int = $49,
+                    marca_llanta_post_der_ext = $50, presion_llanta_post_der_ext = $51
+                    WHERE id_vehiculo = $39";
 
-        $params = [
-            $code, $placa, $marca, $modelo, $edicion, $asientos, $estado,
-            $_POST['soat'] ?? '',
-            v('espejo_derecho'), v('espejo_izquierdo'), v('claxon'), v('antena'),
-            v('parabrisas_frontal'), v('parabrisas_posterior'),
-            v('tapa_combustible'), v('tapa_aceite_motor'), v('tapa_radiator'),
-            v('luces_altas'), v('luces_bajas'), v('luces_traseras'), v('luces_freno'), v('luces_intermitentes'),
-            v('cinturon'), v('radio'), v('extintor'), $_POST['llanta_repuesto'] ?? '',
-            v('llave_rueda'), v('linterna'), v('gato'), v('aire_forzado'),
-            $_POST['aceite_motor'] ?? '', $_POST['refrigerante'] ?? '', $_POST['aceite_direccion'] ?? '',
-            v('alarma'), v('cone_seguridad'), v('suspension'), v('emblemas'),
-            $_POST['observaciones'] ?? '',
-            $id,
-            $_POST['marca_llanta_del_izq'] ?? '', $presiones['presion_llanta_del_izq'],
-            $_POST['marca_llanta_del_der'] ?? '', $presiones['presion_llanta_del_der'],
-            $_POST['marca_llanta_post_izq_int'] ?? '', $presiones['presion_llanta_post_izq_int'],
-            $_POST['marca_llanta_post_izq_ext'] ?? '', $presiones['presion_llanta_post_izq_ext'],
-            $_POST['marca_llanta_post_der_int'] ?? '', $presiones['presion_llanta_post_der_int'],
-            $_POST['marca_llanta_post_der_ext'] ?? '', $presiones['presion_llanta_post_der_ext']
-        ];
+            $params = [
+                $code, $placa, $marca, $modelo, $edicion, $asientos, $estado,
+                $soat,  // CORREGIDO: usa la variable $soat (puede ser null)
+                v('espejo_derecho'), v('espejo_izquierdo'), v('claxon'), v('antena'),
+                v('parabrisas_frontal'), v('parabrisas_posterior'),
+                v('tapa_combustible'), v('tapa_aceite_motor'), v('tapa_radiator'),
+                v('luces_altas'), v('luces_bajas'), v('luces_traseras'), v('luces_freno'), v('luces_intermitentes'),
+                v('cinturon'), v('radio'), v('extintor'), $_POST['llanta_repuesto'] ?? '',
+                v('llave_rueda'), v('linterna'), v('gato'), v('aire_forzado'),
+                $_POST['aceite_motor'] ?? '', $_POST['refrigerante'] ?? '', $_POST['aceite_direccion'] ?? '',
+                v('alarma'), v('cone_seguridad'), v('suspension'), v('emblemas'),
+                $_POST['observaciones'] ?? '',
+                $id,
+                $_POST['marca_llanta_del_izq'] ?? '', $presiones['presion_llanta_del_izq'],
+                $_POST['marca_llanta_del_der'] ?? '', $presiones['presion_llanta_del_der'],
+                $_POST['marca_llanta_post_izq_int'] ?? '', $presiones['presion_llanta_post_izq_int'],
+                $_POST['marca_llanta_post_izq_ext'] ?? '', $presiones['presion_llanta_post_izq_ext'],
+                $_POST['marca_llanta_post_der_int'] ?? '', $presiones['presion_llanta_post_der_int'],
+                $_POST['marca_llanta_post_der_ext'] ?? '', $presiones['presion_llanta_post_der_ext']
+            ];
 
-        $result = pg_query_params($conexion, $sql, $params);
+            $result = pg_query_params($conexion, $sql, $params);
 
-        if ($result) {
-            header("Location: vehiculos.php");
-            exit();
-        } else {
-            $error = "Error al actualizar: " . pg_last_error($conexion);
+            if ($result) {
+                header("Location: vehiculos.php");
+                exit();
+            } else {
+                $error = "Error al actualizar: " . pg_last_error($conexion);
+            }
         }
     }
 }
@@ -127,7 +148,7 @@ include("../../includes/navbar.php");
 <div class="container mb-5">
 
 <?php if (isset($error)): ?>
-    <div class="alert alert-danger"><i class="bi bi-exclamation-triangle-fill"></i> <?= $error ?></div>
+    <div class="alert alert-danger"><i class="bi bi-exclamation-triangle-fill"></i> <?= htmlspecialchars($error) ?></div>
 <?php endif; ?>
 
 <div class="main-card">
@@ -174,8 +195,9 @@ include("../../includes/navbar.php");
         </select>
     </div>
     <div class="col-md-4 mb-3">
-        <label class="form-label fw-semibold">SOAT</label>
-        <input type="text" name="soat" class="form-control" value="<?= htmlspecialchars($vehiculo['soat'] ?? '') ?>">
+        <label class="form-label fw-semibold">📄 SOAT (Fecha vencimiento)</label>
+        <input type="date" name="soat" class="form-control" value="<?= htmlspecialchars($vehiculo['soat'] ?? '') ?>">
+        <small class="text-muted">Formato AAAA-MM-DD</small>
     </div>
 </div>
 
