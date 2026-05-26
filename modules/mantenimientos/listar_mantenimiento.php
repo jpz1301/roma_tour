@@ -115,15 +115,10 @@ include("../../includes/navbar.php");
         <span style="font-weight:600;"><?= date("d", strtotime($row['fecha'])) ?></span>
         <span style="color:#888;font-size:0.8rem;"><?= date("M Y", strtotime($row['fecha'])) ?></span>
     </td>
-
     <td><span class="placa-badge"><i class="bi bi-truck-front"></i> <?= htmlspecialchars($row['vehiculo']) ?></span></td>
-
     <td><i class="bi bi-person" style="color:#666;"></i> <?= htmlspecialchars($row['responsable'] ?? '—') ?></td>
-
     <td><i class="bi bi-person-check" style="color:#666;"></i> <?= htmlspecialchars($row['mecanico'] ?? '—') ?></td>
-
     <td><i class="bi bi-building" style="color:#666;"></i> <?= htmlspecialchars($row['taller'] ?? '—') ?></td>
-
     <td>
         <?php if($row['tipo'] == 'Preventivo'): ?>
             <span class="badge-tipo badge-preventivo"><i class="bi bi-shield-check"></i> Preventivo</span>
@@ -131,15 +126,16 @@ include("../../includes/navbar.php");
             <span class="badge-tipo badge-correctivo"><i class="bi bi-exclamation-diamond"></i> Correctivo</span>
         <?php endif; ?>
     </td>
-
     <td>
         <span class="problema-text" title="<?= htmlspecialchars($problema) ?>"><?= htmlspecialchars($problema) ?></span>
     </td>
-
     <td><span class="costo-badge">S/ <?= number_format($costo, 2) ?></span></td>
-
     <td>
         <div class="d-flex gap-1">
+            <!-- BOTÓN VER (nuevo) -->
+            <a href="ver_mantenimiento.php?id=<?= $row['id'] ?>" class="btn btn-action btn-view" title="Ver">
+                <i class="bi bi-eye-fill"></i>
+            </a>
             <a href="editar_mantenimiento.php?id=<?= $row['id'] ?>" class="btn btn-action btn-edit" title="Editar">
                 <i class="bi bi-pencil-square"></i>
             </a>
@@ -168,5 +164,39 @@ include("../../includes/navbar.php");
 
 </div></div>
 </div>
+
+<style>
+/* Estilos adicionales para el botón Ver */
+.btn-view {
+    background-color: #0dcaf0;
+    color: #000;
+}
+.btn-view:hover {
+    background-color: #0aa2c0;
+    color: #fff;
+}
+/* Asegura que los botones de acción sean consistentes */
+.btn-action {
+    padding: 0.3rem 0.6rem;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+.btn-edit {
+    background-color: #ffc107;
+    color: #000;
+}
+.btn-edit:hover {
+    background-color: #e0a800;
+    color: #000;
+}
+.btn-delete {
+    background-color: #dc3545;
+    color: #fff;
+}
+.btn-delete:hover {
+    background-color: #bb2d3b;
+    color: #fff;
+}
+</style>
 
 <?php include("../../includes/footer.php"); ?>
