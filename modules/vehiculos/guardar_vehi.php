@@ -18,6 +18,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $edicion  = $_POST['edicion'] ?? '';
     $asientos = $_POST['asientos'] ?? '';
     $estado   = $_POST['estado'] ?? 'Activo';
+    $soat     = $_POST['soat'] ?? '';
 
     // Validación
     if ($code == "" || $placa == "" || $marca == "" || $modelo == "" || $edicion == "" || $asientos == "") {
@@ -57,15 +58,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
              marca_llanta_post_izq_ext, presion_llanta_post_izq_ext,
              marca_llanta_post_der_int, presion_llanta_post_der_int,
              marca_llanta_post_der_ext, presion_llanta_post_der_ext) 
-            VALUES ($1,$2,$3,$4,$5,$6,$7,NULL,NULL,NULL,
-             $8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,
-             $22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,
-             $33,$34,$35,$36,$37,
-             $38,$39,$40,$41,$42,$43,$44,$45,$46,$47,$48,$49)
+            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,NULL,NULL,
+             $9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,
+             $23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,
+             $34,$35,$36,$37,$38,
+             $39,$40,$41,$42,$43,$44,$45,$46,$47,$48,$49,$50)
             RETURNING id_vehiculo";
 
     $params = [
         $code, $placa, $marca, $modelo, $edicion, $asientos, $estado,
+        $soat,
         v('espejo_derecho'), v('espejo_izquierdo'), v('claxon'), v('antena'),
         v('parabrisas_frontal'), v('parabrisas_posterior'),
         v('tapa_combustible'), v('tapa_aceite_motor'), v('tapa_radiator'),

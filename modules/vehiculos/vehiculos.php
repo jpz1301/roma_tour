@@ -4,7 +4,7 @@ include("../../config/conexion.php");
 
 $buscar = $_GET['buscar'] ?? '';
 
-$sql = "SELECT id_vehiculo, code, placa, marca, modelo, estado,
+$sql = "SELECT id_vehiculo, code, placa, marca, modelo, estado, soat,
                llanta_repuesto, aceite_motor, refrigerante, aceite_direccion
         FROM vehiculos";
 $params = [];
@@ -78,7 +78,7 @@ include("../../includes/navbar.php");
 <?php if(pg_num_rows($result) > 0): ?>
 <div class="table-responsive">
 <table id="tabla" class="table table-hover">
-<thead><tr><th>ID</th><th>Código</th><th>Placa</th><th>Marca</th><th>Modelo</th><th>Llanta R.</th><th>Aceite Motor</th><th>Refrigerante</th><th>Aceite Dir.</th><th>Estado</th><th>Acciones</th></tr></thead>
+<thead><tr><th>ID</th><th>Código</th><th>Placa</th><th>Marca</th><th>Modelo</th><th>Llanta R.</th><th>Aceite Motor</th><th>Refrigerante</th><th>Aceite Dir.</th><th>Estado</th><th>SOAT</th><th>Acciones</th></tr></thead>
 <tbody>
 <?php while($r = pg_fetch_assoc($result)):
 $e = $r['estado'];
@@ -96,6 +96,7 @@ $iconos = ['Activo'=>'bi-check-circle-fill','Mantenimiento'=>'bi-tools','Inactiv
 <td><?= $r['refrigerante'] ? "<span class='repuesto-badge' title='".htmlspecialchars($r['refrigerante'])."'>".truncar($r['refrigerante'])."</span>" : '<span class="text-muted">—</span>' ?></td>
 <td><?= $r['aceite_direccion'] ? "<span class='repuesto-badge' title='".htmlspecialchars($r['aceite_direccion'])."'>".truncar($r['aceite_direccion'])."</span>" : '<span class="text-muted">—</span>' ?></td>
 <td><span class="badge-estado <?= $estados[$e] ?>"><i class="bi <?= $iconos[$e] ?>"></i> <?= $e ?></span></td>
+<td><?= $r['soat'] ? "<span class='soat-badge' title='".htmlspecialchars($r['soat'])."'>".truncar($r['soat'])."</span>" : '<span class="text-muted">—</span>' ?></td>
 <td>
 <div class="d-flex gap-1 justify-content-center">
 <a href="ver_vehiculo.php?id=<?= $r['id_vehiculo'] ?>" class="btn btn-action btn-view" title="Ver"><i class="bi bi-eye-fill"></i></a>
