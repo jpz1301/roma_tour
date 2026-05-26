@@ -2,11 +2,11 @@
 include("../../includes/seguridad.php");
 include("../../config/conexion.php");
 
-// Validar ID
+// Validar ID usando pg_query_params (seguro)
 if (isset($_GET['id'])) {
     $id = intval($_GET['id']);
-    $sql = "SELECT * FROM vehiculos WHERE id_vehiculo = $id";
-    $result = pg_query($conexion, $sql);
+    $sql = "SELECT * FROM vehiculos WHERE id_vehiculo = $1";
+    $result = pg_query_params($conexion, $sql, [$id]);
 
     if ($result && pg_num_rows($result) > 0) {
         $vehiculo = pg_fetch_assoc($result);
@@ -107,6 +107,26 @@ include("../../includes/navbar.php");
     <div class="col-md-4 mb-3">
         <label class="fw-semibold">Asientos</label>
         <p class="fs-5"><i class="bi bi-person-fill"></i> <?= $vehiculo['asientos'] ?? '—' ?></p>
+    </div>
+    <!-- NUEVO CAMPO SOAT -->
+    <div class="col-md-4 mb-3">
+        <label class="fw-semibold">📄 SOAT</label>
+        <p class="fs-5">
+            <?php 
+            if (!empty($vehiculo['soat'])) {
+                // Formatear fecha a dd/mm/yyyy si es válida
+                $fecha = $vehiculo['soat'];
+                $timestamp = strtotime($fecha);
+                if ($timestamp !== false) {
+                    echo date('d/m/Y', $timestamp);
+                } else {
+                    echo htmlspecialchars($fecha);
+                }
+            } else {
+                echo '—';
+            }
+            ?>
+        </p>
     </div>
 </div>
 
