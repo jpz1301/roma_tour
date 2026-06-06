@@ -4,15 +4,11 @@ include("../../config/conexion.php");
 
 $buscar = $_GET['buscar'] ?? '';
 
-// Consulta principal con fecha de SOAT (corregida)
+// Consulta principal con fecha de SOAT (corregida - sin EXTRACT en PostgreSQL problemático)
 $sql = "SELECT id_vehiculo, code, placa, marca, modelo, estado, soat,
                llanta_repuesto, aceite_motor, refrigerante, aceite_direccion,
                soat_fecha_vencimiento,
-               CASE 
-                   WHEN soat_fecha_vencimiento IS NOT NULL THEN 
-                       EXTRACT(DAY FROM (soat_fecha_vencimiento - CURRENT_DATE))
-                   ELSE NULL 
-               END as dias_restantes
+               (soat_fecha_vencimiento - CURRENT_DATE) as dias_restantes
         FROM vehiculos";
 $params = [];
 if ($buscar) {
@@ -23,9 +19,9 @@ $sql .= " ORDER BY
             CASE 
                 WHEN soat_fecha_vencimiento IS NULL THEN 6
                 WHEN soat_fecha_vencimiento < CURRENT_DATE THEN 1
-                WHEN EXTRACT(DAY FROM (soat_fecha_vencimiento - CURRENT_DATE)) <= 7 THEN 2
-                WHEN EXTRACT(DAY FROM (soat_fecha_vencimiento - CURRENT_DATE)) <= 15 THEN 3
-                WHEN EXTRACT(DAY FROM (soat_fecha_vencimiento - CURRENT_DATE)) <= 30 THEN 4
+                WHEN (soat_fecha_vencimiento - CURRENT_DATE) <= 7 THEN 2
+                WHEN (soat_fecha_vencimiento - CURRENT_DATE) <= 15 THEN 3
+                WHEN (soat_fecha_vencimiento - CURRENT_DATE) <= 30 THEN 4
                 ELSE 5
             END,
             soat_fecha_vencimiento ASC NULLS LAST";
@@ -51,16 +47,16 @@ if (!$stats_query) {
 }
 $stats = pg_fetch_assoc($stats_query);
 
-// Estadísticas de SOAT para alertas (corregida)
+// Estadísticas de SOAT para alertas (corregida - sin EXTRACT)
 $soat_sql = "SELECT 
     COUNT(*) as total_con_soat,
     COUNT(CASE WHEN soat_fecha_vencimiento < CURRENT_DATE THEN 1 END) as vencidos,
     COUNT(CASE WHEN soat_fecha_vencimiento IS NOT NULL AND 
-                    EXTRACT(DAY FROM (soat_fecha_vencimiento - CURRENT_DATE)) BETWEEN 1 AND 7 THEN 1 END) as vence_7_dias,
+                    (soat_fecha_vencimiento - CURRENT_DATE) BETWEEN 1 AND 7 THEN 1 END) as vence_7_dias,
     COUNT(CASE WHEN soat_fecha_vencimiento IS NOT NULL AND 
-                    EXTRACT(DAY FROM (soat_fecha_vencimiento - CURRENT_DATE)) BETWEEN 8 AND 15 THEN 1 END) as vence_15_dias,
+                    (soat_fecha_vencimiento - CURRENT_DATE) BETWEEN 8 AND 15 THEN 1 END) as vence_15_dias,
     COUNT(CASE WHEN soat_fecha_vencimiento IS NOT NULL AND 
-                    EXTRACT(DAY FROM (soat_fecha_vencimiento - CURRENT_DATE)) BETWEEN 16 AND 30 THEN 1 END) as vence_30_dias,
+                    (soat_fecha_vencimiento - CURRENT_DATE) BETWEEN 16 AND 30 THEN 1 END) as vence_30_dias,
     MIN(CASE WHEN soat_fecha_vencimiento > CURRENT_DATE THEN soat_fecha_vencimiento END) as proximo_vencimiento
     FROM vehiculos 
     WHERE soat_fecha_vencimiento IS NOT NULL";
@@ -95,6 +91,9 @@ function getBadgeSOAT($fecha, $dias) {
     }
     
     $fecha_formateada = date('d/m/Y', strtotime($fecha));
+    
+    // Convertir dias a entero si es necesario
+    $dias = intval($dias);
     
     if($dias < 0) {
         return '<span class="badge-soat-vencido" title="VENCIDO desde: ' . $fecha_formateada . '">
