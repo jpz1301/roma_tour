@@ -5,7 +5,9 @@ include("../../config/conexion.php");
 // Validar ID usando pg_query_params (seguro)
 if (isset($_GET['id'])) {
     $id = intval($_GET['id']);
-    $sql = "SELECT * FROM vehiculos WHERE id_vehiculo = $1";
+    $sql = "SELECT *, 
+                   EXTRACT(DAY FROM (soat_fecha_vencimiento - CURRENT_DATE)) as dias_restantes
+            FROM vehiculos WHERE id_vehiculo = $1";
     $result = pg_query_params($conexion, $sql, [$id]);
 
     if ($result && pg_num_rows($result) > 0) {
@@ -17,6 +19,37 @@ if (isset($_GET['id'])) {
 } else {
     header("Location: vehiculos.php");
     exit();
+}
+
+// Función para obtener el badge del SOAT
+function getBadgeSOATDetalle($fecha, $dias) {
+    if(!$fecha) {
+        return '<span class="text-muted">—</span>';
+    }
+    
+    $fecha_formateada = date('d/m/Y', strtotime($fecha));
+    
+    if($dias < 0) {
+        return '<span class="badge-soat-vencido" title="VENCIDO desde: ' . $fecha_formateada . '">
+                    <i class="bi bi-x-octagon-fill"></i> VENCIDO
+                </span>';
+    } elseif($dias <= 7) {
+        return '<span class="badge-soat-urgente" title="Vence en ' . $dias . ' días - ' . $fecha_formateada . '">
+                    <i class="bi bi-exclamation-triangle-fill"></i> Vence en ' . $dias . ' días (URGENTE)
+                </span>';
+    } elseif($dias <= 15) {
+        return '<span class="badge-soat-proximo" title="Vence en ' . $dias . ' días - ' . $fecha_formateada . '">
+                    <i class="bi bi-clock-fill"></i> Vence en ' . $dias . ' días
+                </span>';
+    } elseif($dias <= 30) {
+        return '<span class="badge-soat-aviso" title="Vence en ' . $dias . ' días - ' . $fecha_formateada . '">
+                    <i class="bi bi-bell-fill"></i> Vence en ' . $dias . ' días
+                </span>';
+    } else {
+        return '<span class="badge-soat-vigente" title="Vence: ' . $fecha_formateada . '">
+                    <i class="bi bi-shield-check-fill"></i> Vigente
+                </span>';
+    }
 }
 
 // Configurar includes
@@ -43,6 +76,62 @@ include("../../includes/navbar.php");
 
 <div class="container mb-5">
 
+<!-- ALERTA DE SOAT (si está próximo a vencer) -->
+<?php if(!empty($vehiculo['soat_fecha_vencimiento'])): 
+    $dias = $vehiculo['dias_restantes'];
+    if($dias < 0): ?>
+        <div class="alert alert-danger alert-dismissible fade show shadow mb-4" role="alert" style="border-left: 5px solid #8B0000;">
+            <div class="d-flex align-items-center">
+                <div class="me-3">
+                    <i class="bi bi-x-octagon-fill" style="font-size: 2rem; color: #8B0000;"></i>
+                </div>
+                <div>
+                    <strong><i class="bi bi-exclamation-triangle-fill"></i> ¡SOAT VENCIDO!</strong><br>
+                    El SOAT venció el <?= date('d/m/Y', strtotime($vehiculo['soat_fecha_vencimiento'])) ?>.
+                    <strong>No puede circular sin SOAT vigente.</strong>
+                </div>
+            </div>
+        </div>
+    <?php elseif($dias <= 7): ?>
+        <div class="alert alert-warning alert-dismissible fade show shadow mb-4" role="alert" style="border-left: 5px solid #ff0000;">
+            <div class="d-flex align-items-center">
+                <div class="me-3">
+                    <i class="bi bi-exclamation-triangle-fill" style="font-size: 2rem; color: #ff0000;"></i>
+                </div>
+                <div>
+                    <strong><i class="bi bi-alarm-fill"></i> ¡ALERTA! SOAT por vencer en <?= $dias ?> días</strong><br>
+                    Vence el <?= date('d/m/Y', strtotime($vehiculo['soat_fecha_vencimiento'])) ?>.
+                    <strong>Renovar lo antes posible.</strong>
+                </div>
+            </div>
+        </div>
+    <?php elseif($dias <= 15): ?>
+        <div class="alert alert-warning alert-dismissible fade show shadow mb-4" role="alert" style="border-left: 5px solid #ff6b00;">
+            <div class="d-flex align-items-center">
+                <div class="me-3">
+                    <i class="bi bi-clock-fill" style="font-size: 2rem; color: #ff6b00;"></i>
+                </div>
+                <div>
+                    <strong><i class="bi bi-calendar-exclamation"></i> SOAT por vencer en <?= $dias ?> días</strong><br>
+                    Vence el <?= date('d/m/Y', strtotime($vehiculo['soat_fecha_vencimiento'])) ?>.
+                </div>
+            </div>
+        </div>
+    <?php elseif($dias <= 30): ?>
+        <div class="alert alert-info alert-dismissible fade show shadow mb-4" role="alert" style="border-left: 5px solid #ffc107;">
+            <div class="d-flex align-items-center">
+                <div class="me-3">
+                    <i class="bi bi-bell-fill" style="font-size: 2rem; color: #ffc107;"></i>
+                </div>
+                <div>
+                    <strong><i class="bi bi-calendar-check"></i> Recordatorio: SOAT vence en <?= $dias ?> días</strong><br>
+                    Vence el <?= date('d/m/Y', strtotime($vehiculo['soat_fecha_vencimiento'])) ?>.
+                </div>
+            </div>
+        </div>
+    <?php endif; ?>
+<?php endif; ?>
+
 <div class="main-card">
 <div class="card-header" style="background: linear-gradient(135deg, #0dcaf0, #0aa2c0);">
     <h4><i class="bi bi-eye-fill"></i> Detalle del Vehículo: <?= htmlspecialchars($vehiculo['placa']) ?></h4>
@@ -51,7 +140,7 @@ include("../../includes/navbar.php");
 
 <!-- DATOS BÁSICOS -->
 <div class="row mb-4">
-    <div class="col-md-4 mb-3">
+    <div class="col-md-3 mb-3">
         <div class="card border-0 bg-light">
             <div class="card-body text-center">
                 <small class="text-muted">ID</small>
@@ -59,7 +148,7 @@ include("../../includes/navbar.php");
             </div>
         </div>
     </div>
-    <div class="col-md-4 mb-3">
+    <div class="col-md-3 mb-3">
         <div class="card border-0 bg-light">
             <div class="card-body text-center">
                 <small class="text-muted">Código</small>
@@ -67,7 +156,7 @@ include("../../includes/navbar.php");
             </div>
         </div>
     </div>
-    <div class="col-md-4 mb-3">
+    <div class="col-md-3 mb-3">
         <div class="card border-0 bg-light">
             <div class="card-body text-center">
                 <small class="text-muted">Estado</small>
@@ -82,6 +171,14 @@ include("../../includes/navbar.php");
                     ?>
                     <span class="badge-estado <?= $badge ?>"><?= $estado ?></span>
                 </h5>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card border-0 bg-light">
+            <div class="card-body text-center">
+                <small class="text-muted">Asientos</small>
+                <h5 class="mb-0"><i class="bi bi-person-fill"></i> <?= $vehiculo['asientos'] ?? '—' ?></h5>
             </div>
         </div>
     </div>
@@ -105,17 +202,15 @@ include("../../includes/navbar.php");
         <p class="fs-5"><?= htmlspecialchars($vehiculo['edicion']) ?></p>
     </div>
     <div class="col-md-4 mb-3">
-        <label class="fw-semibold">Asientos</label>
-        <p class="fs-5"><i class="bi bi-person-fill"></i> <?= $vehiculo['asientos'] ?? '—' ?></p>
+        <label class="fw-semibold">SOAT (Aseguradora/Número)</label>
+        <p class="fs-5"><?= htmlspecialchars($vehiculo['soat'] ?? '—') ?></p>
     </div>
-    <!-- NUEVO CAMPO SOAT -->
     <div class="col-md-4 mb-3">
-        <label class="fw-semibold">📄 SOAT</label>
+        <label class="fw-semibold"><i class="bi bi-calendar"></i> Fecha Vencimiento SOAT</label>
         <p class="fs-5">
             <?php 
-            if (!empty($vehiculo['soat'])) {
-                // Formatear fecha a dd/mm/yyyy si es válida
-                $fecha = $vehiculo['soat'];
+            if (!empty($vehiculo['soat_fecha_vencimiento'])) {
+                $fecha = $vehiculo['soat_fecha_vencimiento'];
                 $timestamp = strtotime($fecha);
                 if ($timestamp !== false) {
                     echo date('d/m/Y', $timestamp);
@@ -127,6 +222,10 @@ include("../../includes/navbar.php");
             }
             ?>
         </p>
+    </div>
+    <div class="col-md-4 mb-3">
+        <label class="fw-semibold">Estado SOAT</label>
+        <p><?= getBadgeSOATDetalle($vehiculo['soat_fecha_vencimiento'], $vehiculo['dias_restantes'] ?? null) ?></p>
     </div>
 </div>
 
@@ -250,6 +349,72 @@ foreach($campos_radio as $name => $label){
     border-left: 4px solid #ff6b00;
 }
 .checklist-table td { vertical-align: middle; }
+
+/* Estilos para badges de SOAT */
+.badge-soat-vigente {
+    background-color: #d4edda;
+    color: #155724;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    display: inline-block;
+}
+
+.badge-soat-aviso {
+    background-color: #fff3cd;
+    color: #856404;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    display: inline-block;
+}
+
+.badge-soat-proximo {
+    background-color: #ffe5b4;
+    color: #cc7000;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    display: inline-block;
+    animation: pulse 1s infinite;
+}
+
+.badge-soat-urgente {
+    background-color: #ffcccc;
+    color: #cc0000;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: bold;
+    display: inline-block;
+    animation: pulse 0.5s infinite;
+}
+
+.badge-soat-vencido {
+    background-color: #dc3545;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: bold;
+    display: inline-block;
+    animation: blink 1s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.7; transform: scale(0.98); }
+    100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes blink {
+    0% { background-color: #dc3545; }
+    50% { background-color: #ff6b6b; }
+    100% { background-color: #dc3545; }
+}
 </style>
 
 <?php include("../../includes/footer.php"); ?>

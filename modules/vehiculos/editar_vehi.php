@@ -36,32 +36,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $edicion = $_POST['edicion'];
     $estado = $_POST['estado'];
     $asientos = $_POST['asientos'] ?? '';
+    $soat = $_POST['soat'] ?? '';
+    $soat_fecha_vencimiento = $_POST['soat_fecha_vencimiento'] ?? null;
 
     $verificar = pg_query_params($conexion, "SELECT 1 FROM vehiculos WHERE code = $1 AND id_vehiculo != $2", [$code, $id]);
 
     if (pg_num_rows($verificar) > 0) {
         $error = "El código ya existe";
     } else {
-        // Manejo del campo SOAT: convertir vacío a NULL y formatear fecha si es necesario
-        $soat_raw = $_POST['soat'] ?? '';
-        $soat = null;
-        if (!empty($soat_raw)) {
-            // Si viene en formato dd/mm/yyyy
-            if (preg_match('/^\d{2}\/\d{2}\/\d{4}$/', $soat_raw)) {
-                $parts = explode('/', $soat_raw);
-                $soat = "{$parts[2]}-{$parts[1]}-{$parts[0]}";
-            } else {
-                // Asumir YYYY-MM-DD
-                $soat = $soat_raw;
-            }
-            // Validar que sea una fecha real
-            $date = DateTime::createFromFormat('Y-m-d', $soat);
-            if (!$date || $date->format('Y-m-d') !== $soat) {
-                $error = "Formato de fecha SOAT inválido (use AAAA-MM-DD o DD/MM/AAAA)";
-                $soat = null;
-            }
-        }
-
         // Convertir presiones vacías a NULL
         $presiones = [];
         $campos_presion = [
@@ -77,27 +59,27 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         if (!isset($error)) {
             $sql = "UPDATE vehiculos SET 
                     code = $1, placa = $2, marca = $3, modelo = $4, edicion = $5, asientos = $6, estado = $7,
-                    soat = $8,
-                    espejo_derecho = $9, espejo_izquierdo = $10, claxon = $11, antena = $12,
-                    parabrisas_frontal = $13, parabrisas_posterior = $14,
-                    tapa_combustible = $15, tapa_aceite_motor = $16, tapa_radiator = $17,
-                    luces_altas = $18, luces_bajas = $19, luces_traseras = $20, luces_freno = $21, luces_intermitentes = $22,
-                    cinturon = $23, radio = $24, extintor = $25, llanta_repuesto = $26,
-                    llave_rueda = $27, linterna = $28, gato = $29, aire_forzado = $30,
-                    aceite_motor = $31, refrigerante = $32, aceite_direccion = $33,
-                    alarma = $34, cone_seguridad = $35, suspension = $36, emblemas = $37,
-                    observaciones = $38,
-                    marca_llanta_del_izq = $40, presion_llanta_del_izq = $41,
-                    marca_llanta_del_der = $42, presion_llanta_del_der = $43,
-                    marca_llanta_post_izq_int = $44, presion_llanta_post_izq_int = $45,
-                    marca_llanta_post_izq_ext = $46, presion_llanta_post_izq_ext = $47,
-                    marca_llanta_post_der_int = $48, presion_llanta_post_der_int = $49,
-                    marca_llanta_post_der_ext = $50, presion_llanta_post_der_ext = $51
-                    WHERE id_vehiculo = $39";
+                    soat = $8, soat_fecha_vencimiento = $9,
+                    espejo_derecho = $10, espejo_izquierdo = $11, claxon = $12, antena = $13,
+                    parabrisas_frontal = $14, parabrisas_posterior = $15,
+                    tapa_combustible = $16, tapa_aceite_motor = $17, tapa_radiator = $18,
+                    luces_altas = $19, luces_bajas = $20, luces_traseras = $21, luces_freno = $22, luces_intermitentes = $23,
+                    cinturon = $24, radio = $25, extintor = $26, llanta_repuesto = $27,
+                    llave_rueda = $28, linterna = $29, gato = $30, aire_forzado = $31,
+                    aceite_motor = $32, refrigerante = $33, aceite_direccion = $34,
+                    alarma = $35, cone_seguridad = $36, suspension = $37, emblemas = $38,
+                    observaciones = $39,
+                    marca_llanta_del_izq = $41, presion_llanta_del_izq = $42,
+                    marca_llanta_del_der = $43, presion_llanta_del_der = $44,
+                    marca_llanta_post_izq_int = $45, presion_llanta_post_izq_int = $46,
+                    marca_llanta_post_izq_ext = $47, presion_llanta_post_izq_ext = $48,
+                    marca_llanta_post_der_int = $49, presion_llanta_post_der_int = $50,
+                    marca_llanta_post_der_ext = $51, presion_llanta_post_der_ext = $52
+                    WHERE id_vehiculo = $40";
 
             $params = [
                 $code, $placa, $marca, $modelo, $edicion, $asientos, $estado,
-                $soat,  // CORREGIDO: usa la variable $soat (puede ser null)
+                $soat, $soat_fecha_vencimiento,
                 v('espejo_derecho'), v('espejo_izquierdo'), v('claxon'), v('antena'),
                 v('parabrisas_frontal'), v('parabrisas_posterior'),
                 v('tapa_combustible'), v('tapa_aceite_motor'), v('tapa_radiator'),
@@ -195,9 +177,16 @@ include("../../includes/navbar.php");
         </select>
     </div>
     <div class="col-md-4 mb-3">
-        <label class="form-label fw-semibold">📄 SOAT (Fecha vencimiento)</label>
-        <input type="date" name="soat" class="form-control" value="<?= htmlspecialchars($vehiculo['soat'] ?? '') ?>">
-        <small class="text-muted">Formato AAAA-MM-DD</small>
+        <label class="form-label fw-semibold">📄 SOAT (Aseguradora/Número)</label>
+        <input type="text" name="soat" class="form-control" value="<?= htmlspecialchars($vehiculo['soat'] ?? '') ?>" placeholder="Ej: Sura - 123456">
+    </div>
+    <div class="col-md-4 mb-3">
+        <label class="form-label fw-semibold">
+            <i class="bi bi-calendar"></i> Fecha Vencimiento SOAT
+        </label>
+        <input type="date" name="soat_fecha_vencimiento" class="form-control" 
+               value="<?= htmlspecialchars($vehiculo['soat_fecha_vencimiento'] ?? '') ?>" required>
+        <small class="text-muted">⚠️ El sistema mostrará alertas 30 días antes del vencimiento</small>
     </div>
 </div>
 
