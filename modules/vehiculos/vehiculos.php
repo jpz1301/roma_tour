@@ -4,11 +4,15 @@ include("../../config/conexion.php");
 
 $buscar = $_GET['buscar'] ?? '';
 
-// Consulta principal con fecha de SOAT
+// Consulta principal con fecha de SOAT (corregida)
 $sql = "SELECT id_vehiculo, code, placa, marca, modelo, estado, soat,
                llanta_repuesto, aceite_motor, refrigerante, aceite_direccion,
                soat_fecha_vencimiento,
-               EXTRACT(DAY FROM (soat_fecha_vencimiento - CURRENT_DATE)) as dias_restantes
+               CASE 
+                   WHEN soat_fecha_vencimiento IS NOT NULL THEN 
+                       EXTRACT(DAY FROM (soat_fecha_vencimiento - CURRENT_DATE))
+                   ELSE NULL 
+               END as dias_restantes
         FROM vehiculos";
 $params = [];
 if ($buscar) {
@@ -17,6 +21,7 @@ if ($buscar) {
 }
 $sql .= " ORDER BY 
             CASE 
+                WHEN soat_fecha_vencimiento IS NULL THEN 6
                 WHEN soat_fecha_vencimiento < CURRENT_DATE THEN 1
                 WHEN EXTRACT(DAY FROM (soat_fecha_vencimiento - CURRENT_DATE)) <= 7 THEN 2
                 WHEN EXTRACT(DAY FROM (soat_fecha_vencimiento - CURRENT_DATE)) <= 15 THEN 3
@@ -26,24 +31,59 @@ $sql .= " ORDER BY
             soat_fecha_vencimiento ASC NULLS LAST";
 $result = pg_query_params($conexion, $sql, $params);
 
+// Verificar si la consulta falló
+if (!$result) {
+    echo "Error en consulta principal: " . pg_last_error($conexion);
+    exit();
+}
+
 // Estadísticas normales
-$stats = pg_fetch_assoc(pg_query($conexion, "SELECT 
+$stats_query = pg_query($conexion, "SELECT 
     COUNT(*) as total,
     SUM(CASE WHEN estado='Activo' THEN 1 ELSE 0 END) as activos,
     SUM(CASE WHEN estado='Mantenimiento' THEN 1 ELSE 0 END) as mantenimiento,
     SUM(CASE WHEN estado='Inactivo' THEN 1 ELSE 0 END) as inactivos
-    FROM vehiculos"));
+    FROM vehiculos");
 
-// Estadísticas de SOAT para alertas
-$soat_stats = pg_fetch_assoc(pg_query($conexion, "SELECT 
+if (!$stats_query) {
+    echo "Error en estadísticas: " . pg_last_error($conexion);
+    exit();
+}
+$stats = pg_fetch_assoc($stats_query);
+
+// Estadísticas de SOAT para alertas (corregida)
+$soat_sql = "SELECT 
     COUNT(*) as total_con_soat,
     COUNT(CASE WHEN soat_fecha_vencimiento < CURRENT_DATE THEN 1 END) as vencidos,
-    COUNT(CASE WHEN EXTRACT(DAY FROM (soat_fecha_vencimiento - CURRENT_DATE)) BETWEEN 1 AND 7 THEN 1 END) as vence_7_dias,
-    COUNT(CASE WHEN EXTRACT(DAY FROM (soat_fecha_vencimiento - CURRENT_DATE)) BETWEEN 8 AND 15 THEN 1 END) as vence_15_dias,
-    COUNT(CASE WHEN EXTRACT(DAY FROM (soat_fecha_vencimiento - CURRENT_DATE)) BETWEEN 16 AND 30 THEN 1 END) as vence_30_dias,
+    COUNT(CASE WHEN soat_fecha_vencimiento IS NOT NULL AND 
+                    EXTRACT(DAY FROM (soat_fecha_vencimiento - CURRENT_DATE)) BETWEEN 1 AND 7 THEN 1 END) as vence_7_dias,
+    COUNT(CASE WHEN soat_fecha_vencimiento IS NOT NULL AND 
+                    EXTRACT(DAY FROM (soat_fecha_vencimiento - CURRENT_DATE)) BETWEEN 8 AND 15 THEN 1 END) as vence_15_dias,
+    COUNT(CASE WHEN soat_fecha_vencimiento IS NOT NULL AND 
+                    EXTRACT(DAY FROM (soat_fecha_vencimiento - CURRENT_DATE)) BETWEEN 16 AND 30 THEN 1 END) as vence_30_dias,
     MIN(CASE WHEN soat_fecha_vencimiento > CURRENT_DATE THEN soat_fecha_vencimiento END) as proximo_vencimiento
     FROM vehiculos 
-    WHERE soat_fecha_vencimiento IS NOT NULL"));
+    WHERE soat_fecha_vencimiento IS NOT NULL";
+
+$soat_stats_query = pg_query($conexion, $soat_sql);
+
+if (!$soat_stats_query) {
+    echo "Error en estadísticas SOAT: " . pg_last_error($conexion);
+    exit();
+}
+$soat_stats = pg_fetch_assoc($soat_stats_query);
+
+// Si no hay resultados, inicializar con ceros
+if (!$soat_stats) {
+    $soat_stats = [
+        'total_con_soat' => 0,
+        'vencidos' => 0,
+        'vence_7_dias' => 0,
+        'vence_15_dias' => 0,
+        'vence_30_dias' => 0,
+        'proximo_vencimiento' => null
+    ];
+}
 
 function truncar($t, $l=25) {
     return empty($t) ? '—' : (strlen($t)<=$l ? htmlspecialchars($t) : htmlspecialchars(substr($t,0,$l)).'...');
@@ -114,7 +154,7 @@ include("../../includes/navbar.php");
 </div>
 
 <!-- ALERTA DE SOAT -->
-<?php if($soat_stats['vencidos'] > 0 || $soat_stats['vence_7_dias'] > 0 || $soat_stats['vence_15_dias'] > 0): ?>
+<?php if(($soat_stats['vencidos'] ?? 0) > 0 || ($soat_stats['vence_7_dias'] ?? 0) > 0 || ($soat_stats['vence_15_dias'] ?? 0) > 0): ?>
 <div class="alert alert-warning alert-dismissible fade show mt-3 shadow" role="alert" style="border-left: 5px solid #ff0000;">
     <div class="d-flex align-items-center">
         <div class="me-3">
@@ -122,19 +162,19 @@ include("../../includes/navbar.php");
         </div>
         <div class="flex-grow-1">
             <strong><i class="bi bi-calendar-exclamation"></i> ALERTA DE VENCIMIENTO DE SOAT</strong><br>
-            <?php if($soat_stats['vencidos'] > 0): ?>
+            <?php if(($soat_stats['vencidos'] ?? 0) > 0): ?>
                 <span class="badge bg-danger me-2">🔴 <?= $soat_stats['vencidos'] ?> VENCIDOS</span>
             <?php endif; ?>
-            <?php if($soat_stats['vence_7_dias'] > 0): ?>
+            <?php if(($soat_stats['vence_7_dias'] ?? 0) > 0): ?>
                 <span class="badge bg-warning text-dark me-2">🟡 <?= $soat_stats['vence_7_dias'] ?> vencen en ≤7 días</span>
             <?php endif; ?>
-            <?php if($soat_stats['vence_15_dias'] > 0): ?>
+            <?php if(($soat_stats['vence_15_dias'] ?? 0) > 0): ?>
                 <span class="badge bg-info me-2">🟠 <?= $soat_stats['vence_15_dias'] ?> vencen en ≤15 días</span>
             <?php endif; ?>
-            <?php if($soat_stats['vence_30_dias'] > 0): ?>
+            <?php if(($soat_stats['vence_30_dias'] ?? 0) > 0): ?>
                 <span class="badge bg-secondary">🟡 <?= $soat_stats['vence_30_dias'] ?> vencen en ≤30 días</span>
             <?php endif; ?>
-            <?php if($soat_stats['proximo_vencimiento']): ?>
+            <?php if(!empty($soat_stats['proximo_vencimiento'])): ?>
                 <br><small class="mt-1 d-block">
                     <i class="bi bi-calendar"></i> Próximo vencimiento: 
                     <strong><?= date('d/m/Y', strtotime($soat_stats['proximo_vencimiento'])) ?></strong>
