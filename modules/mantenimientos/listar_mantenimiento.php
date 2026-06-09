@@ -15,7 +15,7 @@ $sql = "SELECT
             m.observaciones
         FROM mantenimiento m
         JOIN vehiculos v ON m.vehiculo_id = v.id_vehiculo
-        ORDER BY m.fecha DESC";
+        ORDER BY TO_DATE(m.fecha, 'DD Mon YYYY') DESC";
 
 $result = pg_query($conexion, $sql);
 
@@ -132,7 +132,7 @@ include("../../includes/navbar.php");
     <td><span class="costo-badge">S/ <?= number_format($costo, 2) ?></span></td>
     <td>
         <div class="d-flex gap-1">
-            <!-- BOTÓN VER (nuevo) -->
+            <!-- BOTÓN VER -->
             <a href="ver_mantenimiento.php?id=<?= $row['id'] ?>" class="btn btn-action btn-view" title="Ver">
                 <i class="bi bi-eye-fill"></i>
             </a>
@@ -175,7 +175,6 @@ include("../../includes/navbar.php");
     background-color: #0aa2c0;
     color: #fff;
 }
-/* Asegura que los botones de acción sean consistentes */
 .btn-action {
     padding: 0.3rem 0.6rem;
     border-radius: 8px;
