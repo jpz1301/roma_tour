@@ -15,7 +15,7 @@ $sql = "SELECT
             m.observaciones
         FROM mantenimiento m
         JOIN vehiculos v ON m.vehiculo_id = v.id_vehiculo
-        ORDER BY TO_DATE(m.fecha, 'DD Mon YYYY') DESC";
+        ORDER BY m.fecha DESC";
 
 $result = pg_query($conexion, $sql);
 
@@ -112,8 +112,12 @@ include("../../includes/navbar.php");
 ?>
 <tr>
     <td>
-        <span style="font-weight:600;"><?= date("d", strtotime($row['fecha'])) ?></span>
-        <span style="color:#888;font-size:0.8rem;"><?= date("M Y", strtotime($row['fecha'])) ?></span>
+        <?php 
+        // Formatear fecha si es tipo DATE
+        $fecha = new DateTime($row['fecha']);
+        echo '<span style="font-weight:600;">' . $fecha->format("d") . '</span>';
+        echo '<span style="color:#888;font-size:0.8rem;"> ' . $fecha->format("M Y") . '</span>';
+        ?>
     </td>
     <td><span class="placa-badge"><i class="bi bi-truck-front"></i> <?= htmlspecialchars($row['vehiculo']) ?></span></td>
     <td><i class="bi bi-person" style="color:#666;"></i> <?= htmlspecialchars($row['responsable'] ?? '—') ?></td>
@@ -132,7 +136,6 @@ include("../../includes/navbar.php");
     <td><span class="costo-badge">S/ <?= number_format($costo, 2) ?></span></td>
     <td>
         <div class="d-flex gap-1">
-            <!-- BOTÓN VER -->
             <a href="ver_mantenimiento.php?id=<?= $row['id'] ?>" class="btn btn-action btn-view" title="Ver">
                 <i class="bi bi-eye-fill"></i>
             </a>
@@ -166,7 +169,6 @@ include("../../includes/navbar.php");
 </div>
 
 <style>
-/* Estilos adicionales para el botón Ver */
 .btn-view {
     background-color: #0dcaf0;
     color: #000;
