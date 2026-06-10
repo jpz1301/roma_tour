@@ -2,6 +2,7 @@
 include("../../includes/seguridad.php");
 include("../../config/conexion.php");
 
+// Consulta con ordenamiento forzado por fecha (más reciente primero)
 $sql = "SELECT 
             m.id,
             m.fecha,
@@ -15,7 +16,7 @@ $sql = "SELECT
             m.observaciones
         FROM mantenimiento m
         JOIN vehiculos v ON m.vehiculo_id = v.id_vehiculo
-        ORDER BY m.fecha DESC";
+        ORDER BY m.fecha::DATE DESC NULLS LAST";
 
 $result = pg_query($conexion, $sql);
 
@@ -106,18 +107,30 @@ include("../../includes/navbar.php");
 </thead>
 <tbody>
 
-<?php while($row = pg_fetch_assoc($result)): 
+<?php 
+// Array para almacenar y ordenar manualmente por si acaso
+$datos = [];
+while($row = pg_fetch_assoc($result)) {
+    $datos[] = $row;
+}
+
+// Ordenamiento manual en PHP (doble seguridad)
+usort($datos, function($a, $b) {
+    $fecha_a = new DateTime($a['fecha']);
+    $fecha_b = new DateTime($b['fecha']);
+    return $fecha_b <=> $fecha_a; // DESC (más reciente primero)
+});
+?>
+
+<?php foreach($datos as $row): 
     $problema = $row['problema'] ?? '—';
     $costo = $row['costo'] ?? 0;
+    $fecha_obj = new DateTime($row['fecha']);
 ?>
 <tr>
     <td>
-        <?php 
-        // Formatear fecha si es tipo DATE
-        $fecha = new DateTime($row['fecha']);
-        echo '<span style="font-weight:600;">' . $fecha->format("d") . '</span>';
-        echo '<span style="color:#888;font-size:0.8rem;"> ' . $fecha->format("M Y") . '</span>';
-        ?>
+        <span style="font-weight:600;"><?= $fecha_obj->format("d") ?></span>
+        <span style="color:#888;font-size:0.8rem;"> <?= $fecha_obj->format("M Y") ?></span>
     </td>
     <td><span class="placa-badge"><i class="bi bi-truck-front"></i> <?= htmlspecialchars($row['vehiculo']) ?></span></td>
     <td><i class="bi bi-person" style="color:#666;"></i> <?= htmlspecialchars($row['responsable'] ?? '—') ?></td>
@@ -149,7 +162,7 @@ include("../../includes/navbar.php");
         </div>
     </td>
 </tr>
-<?php endwhile; ?>
+<?php endforeach; ?>
 
 </tbody>
 </table>
