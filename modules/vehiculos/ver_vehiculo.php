@@ -5,8 +5,10 @@ include("../../config/conexion.php");
 // Validar ID usando pg_query_params (seguro)
 if (isset($_GET['id'])) {
     $id = intval($_GET['id']);
+    // ✅ LÍNEA CORREGIDA: Eliminé EXTRACT(DAY FROM (...)) 
+    // porque soat_fecha_vencimiento - CURRENT_DATE ya devuelve un entero (días de diferencia)
     $sql = "SELECT *, 
-                   EXTRACT(DAY FROM (soat_fecha_vencimiento - CURRENT_DATE)) as dias_restantes
+                   (soat_fecha_vencimiento - CURRENT_DATE) as dias_restantes
             FROM vehiculos WHERE id_vehiculo = $1";
     $result = pg_query_params($conexion, $sql, [$id]);
 
